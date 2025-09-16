@@ -1,9 +1,40 @@
 ﻿@{
     ViewData["Title"] = "Lecturer Dashboard";
 }
-<h2>Lecturer Dashboard</h2>
 
-<div>
-    <a class="btn btn-primary" href="/Lecturer/SubmitClaim">Submit Claim</a>
-    <a class="btn btn-info" href="/Lecturer/ClaimStatus">View Claim Status</a>
-</div>
+<nav>
+    <ul class="nav nav-pills">
+        <li class="nav-item">
+            <a class="nav-link active" href="/Lecturer/Index">My Claims</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/Lecturer/SubmitClaim">Submit Claim</a>
+        </li>
+    </ul>
+</nav>
+
+<h2>My Submitted Claims</h2>
+
+<table class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>Claim ID</th>
+            <th>Month</th>
+            <th>Status</th>
+            <th>Details</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var claim in Model)
+        {
+            <tr>
+                <td>@claim.ClaimId</td>
+                <td>@claim.Month</td>
+                <td>@claim.Status</td>
+                <td><a class="btn btn-info" href="/Lecturer/ClaimDetails/@claim.ClaimId">Details</a></td>
+            </tr>
+        }
+    </tbody>
+
+</table>
