@@ -1,5 +1,20 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model dynamic
 @{
+    ViewData["Title"] = "Claim Details";
 }
+
+<h2>Claim Details</h2>
+
+<div>
+    <p><strong>Claim ID:</strong> @Model.ClaimId</p>
+    <p><strong>Lecturer Name:</strong> @Model.LecturerName</p>
+    <p><strong>Month:</strong> @Model.Month</p>
+    <p><strong>Hours Worked:</strong> @Model.HoursWorked</p>
+    <p><strong>Hourly Rate:</strong> @Model.HourlyRate</p>
+    <p><strong>Total Amount:</strong> @Model.TotalAmount</p>
+    <p><strong>Status:</strong> @Model.Status</p>
+    <p><strong>Finalised By:</strong> @Model.FinalisedBy</p>
+    <p><strong>Supporting Documents:</strong> @Model.SupportingDocuments</p>
+</div>
+
+<a class="btn btn-secondary" href="/Manager/Dashboard">Back to Dashboard</a>

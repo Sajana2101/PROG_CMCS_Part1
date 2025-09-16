@@ -7,19 +7,38 @@
 <table class="table table-bordered">
     <tr>
         <th>Claim ID</th>
-        <th>Lecturer</th>
         <th>Month</th>
         <th>Status</th>
-        <th>Action</th>
+        <th>Actions</th>
     </tr>
-    <tr>
-        <td>1</td>
-        <td>Lecturer A</td>
-        <td>August</td>
-        <td>Verified</td>
-        <td>
-            <button class="btn btn-success">Approve</button>
-            <button class="btn btn-danger">Reject</button>
-        </td>
-    </tr>
+    </thead>
+    <tbody>
+        @foreach (var claim in Model)
+        {
+            <tr>
+                <td>@claim.ClaimId</td>
+                <td>@claim.Month</td>
+                <td>@claim.Status</td>
+                <td>
+                    @if (claim.Status == "Submitted" || claim.Status == "Pending Verification")
+                    {
+                        <a class="btn btn-success" href="#">Verify</a>
+                        <a class="btn btn-primary" href="#">Approve</a>
+                        <a class="btn btn-danger" href="#">Reject</a>
+                        <a class="btn btn-info" href="/Manager/ClaimDetails/@claim.ClaimId">Details</a>
+                    }
+                    else if (claim.Status == "Verified – Pending Approval")
+                    {
+                        <a class="btn btn-primary" href="#">Approve</a>
+                        <a class="btn btn-danger" href="#">Reject</a>
+                        <a class="btn btn-info" href="/Manager/ClaimDetails/@claim.ClaimId">Details</a>
+                    }
+                    else if (claim.Status == "Approved" || claim.Status == "Rejected")
+                    {
+                        <a class="btn btn-info" href="/Manager/ClaimDetails/@claim.ClaimId">Details</a>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
 </table>
