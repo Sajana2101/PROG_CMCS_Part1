@@ -1,10 +1,59 @@
 ﻿@{
     ViewData["Title"] = "Login";
 }
-<h2>Select User Role</h2>
 
-<div>
-    <a class="btn btn-primary" href="/Lecturer/Dashboard">Login as Lecturer</a>
-    <a class="btn btn-secondary" href="/Coordinator/Dashboard">Login as Coordinator</a>
-    <a class="btn btn-success" href="/Manager/Dashboard">Login as Manager</a>
-</div>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+        }
+
+        .page-container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        h1.welcome-heading {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 50px;
+            text-align: center;
+        }
+
+        .login-box {
+            text-align: center;
+            padding: 40px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            background-color: #f9f9f9;
+        }
+
+            .login-box .btn {
+                width: 200px;
+                margin-bottom: 15px;
+            }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <h1 class="welcome-heading">Welcome to the Contract Monthly Claim System! </h1>
+
+        <div class="login-box">
+            <p>Please select your role to log in:</p>
+            <a class="btn btn-primary" href="/Lecturer/Dashboard">Login as Lecturer</a><br />
+            <a class="btn btn-success" href="/Coordinator/Dashboard">Login as Coordinator</a><br />
+            <a class="btn btn-warning" href="/Manager/Dashboard">Login as Manager</a>
+        </div>
+    </div>
+</body>
+</html>

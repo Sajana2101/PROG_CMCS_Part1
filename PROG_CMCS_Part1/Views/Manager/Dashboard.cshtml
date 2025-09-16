@@ -3,7 +3,18 @@
 }
 <h2>Manager Dashboard</h2>
 
-<p>Verified Claims</p>
+<form method="get" asp-action="Dashboard">
+    <label>Filter by Status: </label>
+    <select name="statusFilter" onchange="this.form.submit()">
+        <option value="All">All</option>
+        <option value="Pending Verification">Pending Verification</option>
+        <option value="Verified – Pending Approval">Verified – Pending Approval</option>
+        <option value="Approved">Approved</option>
+        <option value="Rejected">Rejected</option>
+    </select>
+    <button type="submit" name="statusFilter" value="All" class="btn btn-secondary">Reset</button>
+</form>
+
 <table class="table table-bordered">
     <tr>
         <th>Claim ID</th>

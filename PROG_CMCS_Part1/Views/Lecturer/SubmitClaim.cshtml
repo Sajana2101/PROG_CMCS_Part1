@@ -4,17 +4,23 @@
 <h2>Submit Claim</h2>
 
 <form>
-    <div>
+    <div class="mb-3 col-md-4">
         <label>Month:</label>
-        <input type="text" name="Month" />
+        <input type="text" name="Month" class="form-control" />
     </div>
-    <div>
+    <div class="mb-3 col-md-4">
         <label>Hours Worked:</label>
-        <input type="number" name="Hours" />
+        <input type="number" name="Hours" class="form-control" />
     </div>
-    <div>
+    <div class="mb-3 col-md-4">
         <label>Upload Supporting Document:</label>
-        <input type="file" name="SupportingDoc" />
+        <input type="file" name="SupportingDoc" class="form-control" />
+        <small class="form-text text-muted">Maximum file size: 5MB</small>
+        <small class="form-text text-muted">Only PDF, Word, and Notepad Documents Accepted</small>
     </div>
-    <button type="button" class="btn btn-success">Submit (Prototype Only)</button>
+    <div class="mt-3">
+        <button type="button" class="btn btn-success me-2">Submit</button>
+        <a class="btn btn-secondary" href="/Lecturer/Dashboard">Back to Dashboard</a>
+    </div>
 </form>
+
