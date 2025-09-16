@@ -14,6 +14,19 @@
     </select>
     <button type="submit" name="statusFilter" value="All" class="btn btn-secondary">Reset</button>
 </form>
+@functions {
+    private string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "Approved" => "bg-success",
+            "Rejected" => "bg-danger",
+            "Pending Verification" => "bg-light text-dark",
+            "Verified – Pending Approval" => "bg-warning text-dark",
+            _ => "bg-secondary text-white"
+        };
+    }
+}
 
 <table class="table table-bordered">
     <tr>
@@ -29,7 +42,8 @@
             <tr>
                 <td>@claim.ClaimId</td>
                 <td>@claim.Month</td>
-                <td>@claim.Status</td>
+                <td class="@GetStatusClass(claim.Status) text-center">@claim.Status</td>
+
                 <td>
                     @if (claim.Status == "Submitted" || claim.Status == "Pending Verification")
                     {
