@@ -4,7 +4,7 @@
 }
 
 <h2>Claims to Review</h2>
-
+<!-- Filter form -->
 
 <form method="get" asp-action="Dashboard">
     <label>Filter by Status: </label>
@@ -17,7 +17,7 @@
     </select>
     <button type="submit" name="statusFilter" value="All" class="btn btn-secondary">Reset</button>
 </form>
-
+<!-- Status colours -->
 @functions {
     private string GetStatusClass(string status)
     {
@@ -31,7 +31,7 @@
         };
     }
 }
-
+<!-- Claims table -->
 <table class="table table-striped table-bordered">
     <thead>
         <tr>

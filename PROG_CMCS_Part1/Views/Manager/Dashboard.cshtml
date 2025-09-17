@@ -2,7 +2,7 @@
     ViewData["Title"] = "Manager Dashboard";
 }
 <h2>Manager Dashboard</h2>
-
+<!-- Filter form -->
 <form method="get" asp-action="Dashboard">
     <label>Filter by Status: </label>
     <select name="statusFilter" onchange="this.form.submit()">
@@ -15,6 +15,7 @@
     <button type="submit" name="statusFilter" value="All" class="btn btn-secondary">Reset</button>
 </form>
 @functions {
+    // Assign CSS class based on claim status
     private string GetStatusClass(string status)
     {
         return status switch
@@ -27,7 +28,7 @@
         };
     }
 }
-
+<!-- Claims table -->
 <table class="table table-bordered">
     <tr>
         <th>Claim ID</th>
@@ -40,10 +41,11 @@
         @foreach (var claim in Model)
         {
             <tr>
+                <!-- Claim data -->
                 <td>@claim.ClaimId</td>
                 <td>@claim.Month</td>
                 <td class="@GetStatusClass(claim.Status) text-center">@claim.Status</td>
-
+                <!-- Action buttons -->
                 <td>
                     @if (claim.Status == "Submitted" || claim.Status == "Pending Verification")
                     {
