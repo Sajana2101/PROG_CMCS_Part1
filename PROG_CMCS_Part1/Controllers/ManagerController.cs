@@ -1,37 +1,86 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using PROG_CMCS_Part1.Data;
+using PROG_CMCS_Part1.Models;
+using PROG_CMCS_Part1.Services;
 
 namespace PROG_CMCS_Part1.Controllers
 {
     public class ManagerController : Controller
     {
-        //sample claim data for hardcoding list 
-        private static List<dynamic> claims = new List<dynamic>
+        private readonly FileEncryptionService _encryptionService;
+        private readonly long _maxFileSize = 5 * 1024 * 1024; 
+        private readonly string[] _allowedExtensions = { ".pdf", ".docx", ".doc", ".xlsx", ".xls", ".jpg", ".jpeg", ".png", ".txt" };
+
+        public ManagerController(FileEncryptionService encryptionService)
         {
-            new { ClaimId = 101, LecturerName = "Lecturer A", Month = "August", HoursWorked = 20, HourlyRate = 50, TotalAmount = 1000, Status = "Approved",  FinalisedBy = "Manager Smith", SupportingDocuments = "Document1.pdf" },
-            new { ClaimId = 102, LecturerName = "Lecturer A", Month = "September", HoursWorked = 15, HourlyRate = 50, TotalAmount = 750, Status = "Pending Verification", FinalisedBy = "-", SupportingDocuments = "Document2.pdf" },
-            new { ClaimId = 103, LecturerName = "Lecturer A", Month = "October", HoursWorked = 18, HourlyRate = 50, TotalAmount = 900, Status = "Verified – Pending Approval", FinalisedBy = "-", SupportingDocuments = "Document3.pdf" },
-            new { ClaimId = 104, LecturerName = "Lecturer A", Month = "August", HoursWorked = 22, HourlyRate = 50, TotalAmount = 1100, Status = "Rejected", FinalisedBy = "Manager Smith", SupportingDocuments = "Document4.pdf" }
-        };
-        //show dashboard with claims
+            _encryptionService = encryptionService;
+        }
+        [HttpGet]
         public IActionResult Dashboard(string statusFilter)
         {
-            var filteredClaims = claims;
-            //apply filter to filter by status
+            var claims = ClaimData.GetAllClaims();
+
+         
             if (!string.IsNullOrEmpty(statusFilter) && statusFilter != "All")
-            {
-                filteredClaims = claims.Where(c => c.Status == statusFilter).ToList();
-            }
-            
-            ViewBag.StatusFilter = statusFilter;
-            //show filtered content
-            return View(filteredClaims);
+                claims = claims.Where(c => c.Status == statusFilter).ToList();
+
+            ViewBag.StatusFilter = statusFilter ?? "All";
+            return View(claims); 
         }
-        //method to show claim details 
+
+      
+        [HttpGet]
         public IActionResult ClaimDetails(int id)
         {
-            var claim = claims.Find(c => c.ClaimId == id);
-            if (claim == null) return NotFound();
-            return View(claim);
+            var claim = ClaimData.GetClaimById(id);
+            if (claim == null)
+                return NotFound();
+
+            return View(claim); 
         }
+
+
+
+        [HttpGet]
+        public async Task<IActionResult> DownloadFile(int claimId, string file)
+        {
+            var claim = ClaimData.GetClaimById(claimId);
+            if (claim == null || !claim.EncryptedDocuments.Contains(file))
+                return NotFound();
+
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"claim-{claimId}", file);
+            if (!System.IO.File.Exists(filePath))
+                return NotFound();
+
+            try
+            {
+                var memoryStream = await _encryptionService.DecryptFileAsync(filePath);
+                var originalName = claim.OriginalDocuments[claim.EncryptedDocuments.IndexOf(file)];
+
+                return File(memoryStream, "application/octet-stream", originalName);
+            }
+            catch
+            {
+                return BadRequest("Error decrypting the file.");
+            }
+        }
+        
+        [HttpPost]
+        public IActionResult UpdateStatus(int id, string newStatus, string managerName)
+        {
+            var claim = ClaimData.GetClaimById(id);
+            if (claim == null)
+                return NotFound();
+
+            claim.Status = newStatus;                
+            claim.ManagerName = managerName;        
+            ClaimData.UpdateClaim(claim);            
+
+            TempData["Success"] = $"Claim {id} has been {newStatus.ToLower()} by {managerName}.";
+            return RedirectToAction("Dashboard");
+        }
+
+
+
     }
 }
