@@ -14,9 +14,9 @@ namespace PROG_CMCS_Part1.Models
         public string? Comments { get; set; }
         public string Status { get; set; }
         public string CoordinatorName { get; set; } = "-";
-        public string CoordinatorStatus { get; set; } = "Pending";
+        
         public string ManagerName { get; set; } = "-";
-        public string ManagerStatus { get; set; } = "Pending";
+      
         public string Month { get; set; }
         public DateTime DateSubmitted { get; set; }
 
