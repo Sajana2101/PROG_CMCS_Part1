@@ -63,7 +63,7 @@
                 <td class="@GetStatusClass(claim.Status) text-center">@claim.Status</td>
                 <td>@claim.ManagerName</td>
 
-                <!-- Display uploaded documents -->
+               
                 <td>
                     @if (claim.EncryptedDocuments != null && claim.EncryptedDocuments.Any())
                     {
@@ -93,13 +93,11 @@
                     }
                 </td>
 
-              
+                <!--Added "Enter your name" field to ensure the managers intentionally verifies or rejects the claim,
+                            preventing accidental status changes.-->
                 <td>
                     @if (claim.Status == "Pending Verification" || claim.Status == "Verified – Pending Approval")
-                     <!--
-                            Added "Enter your name" field to ensure the managers intentionally verifies or rejects the claim,
-                            preventing accidental status changes.
-                        -->
+
                     {
                         <form asp-action="UpdateStatus" method="post" class="d-inline-block">
                             <input type="hidden" name="id" value="@claim.Id" />

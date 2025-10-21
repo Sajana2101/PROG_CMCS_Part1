@@ -9,13 +9,31 @@
     "Comments": "nothing from my side",
     "Status": "Approved",
     "CoordinatorName": "Sajana Motheram",
-    "CoordinatorStatus": "Pending",
     "ManagerName": "Amy",
-    "ManagerStatus": "Pending",
     "Month": "October",
     "DateSubmitted": "2025-10-21T12:32:51.383922+02:00",
     "EncryptedDocuments": [
       "nz4whits.txt.enc"
+    ],
+    "OriginalDocuments": [
+      "Supporting Document 1.txt"
+    ]
+  },
+  {
+    "Id": 2,
+    "LecturerName": "Amanda Doe",
+    "ModuleCode": "INSY6212",
+    "HoursWorked": 45,
+    "HourlyRate": 126,
+    "TotalAmount": 5670,
+    "Comments": "Nothing to add",
+    "Status": "Rejected",
+    "CoordinatorName": "Sajana",
+    "ManagerName": "Sajana",
+    "Month": "October",
+    "DateSubmitted": "2025-10-21T16:53:11.6975137+02:00",
+    "EncryptedDocuments": [
+      "cbdhjfaj.txt.enc"
     ],
     "OriginalDocuments": [
       "Supporting Document 1.txt"
