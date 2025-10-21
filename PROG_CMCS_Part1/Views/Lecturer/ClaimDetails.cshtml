@@ -6,7 +6,7 @@
 }
 
 <h2>Claim Details</h2>
-
+<!-- Table for displaying detailed information about a specific claim -->
 <table class="table table-bordered">
     <tr>
         <th>Lecturer</th>
@@ -55,8 +55,10 @@
         <td>@Model.DateSubmitted.ToString("dd MMM yyyy")</td>
     </tr>
     <tr>
+        <!-- Uploaded Documents section -->
         <th>Uploaded Documents</th>
         <td>
+            <!-- Display list of uploaded files with download links, or a message if none -->
             @if (Model.EncryptedDocuments != null && Model.EncryptedDocuments.Any())
             {
                 <ul>
@@ -80,6 +82,7 @@
             }
             else
             {
+                <!-- Shown when no files were uploaded -->
                 <span>No documents uploaded</span>
             }
         </td>

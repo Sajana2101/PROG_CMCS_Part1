@@ -7,15 +7,19 @@ namespace PROG_CMCS_Part1.Controllers
 {
     public class CoordinatorController : Controller
     {
-      
-        private readonly FileEncryptionService _encryptionService;
-        private readonly long _maxFileSize = 5 * 1024 * 1024; // 5MB
-        private readonly string[] _allowedExtensions = { ".pdf", ".docx", ".doc", ".xlsx", ".xls", ".jpg", ".jpeg", ".png", ".txt" };
 
+        // Service for handling file encryption and decryption
+        private readonly FileEncryptionService _encryptionService;
+        // Maximum file size allowed for uploads (5 MB)
+        private readonly long _maxFileSize = 5 * 1024 * 1024;
+        // List of file extensions allowed for claims
+        private readonly string[] _allowedExtensions = { ".pdf", ".docx", ".doc", ".xlsx", ".xls", ".jpg", ".jpeg", ".png", ".txt" };
+        // Inject the file encryption service
         public CoordinatorController(FileEncryptionService encryptionService)
         {
             _encryptionService = encryptionService;
         }
+        // Display all claims on the coordinator dashboard
         [HttpGet]
         public IActionResult Dashboard()
         {
@@ -23,7 +27,7 @@ namespace PROG_CMCS_Part1.Controllers
             return View(claims); 
         }
 
-       
+        // Update the status and coordinator assigned to a specific claim
         [HttpPost]
         public IActionResult UpdateStatus(int id, string status, string coordinatorName)
         {
@@ -40,31 +44,37 @@ namespace PROG_CMCS_Part1.Controllers
         }
 
 
-
+        // Download and decrypt a specific file attached to a claim
         [HttpGet]
         public async Task<IActionResult> DownloadFile(int claimId, string file)
         {
             var claim = ClaimData.GetClaimById(claimId);
+            // Ensure claim and file exist
             if (claim == null || !claim.EncryptedDocuments.Contains(file))
                 return NotFound();
 
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"claim-{claimId}", file);
+            // Ensure file exists on disk
             if (!System.IO.File.Exists(filePath))
                 return NotFound();
 
             try
             {
+                // Decrypt the file into memory
                 var memoryStream = await _encryptionService.DecryptFileAsync(filePath);
+                // Use original filename for download
                 var originalName = claim.OriginalDocuments[claim.EncryptedDocuments.IndexOf(file)];
 
                 return File(memoryStream, "application/octet-stream", originalName);
             }
             catch
+
             {
+                // Return error if decryption fails
                 return BadRequest("Error decrypting the file.");
             }
         }
-        
+        // Show details for a single claim
         [HttpGet]
         public IActionResult ClaimDetails(int id)
         {

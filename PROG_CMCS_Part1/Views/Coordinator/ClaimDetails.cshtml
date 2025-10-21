@@ -4,7 +4,7 @@
 @{
     ViewData["Title"] = "Claim Details";
 }
-
+<!-- Display claim information in a table -->
 <h2>Claim Details</h2>
 
 <table class="table table-bordered">
@@ -57,6 +57,7 @@
     <tr>
         <th>Uploaded Documents</th>
         <td>
+            <!-- List uploaded files with download links -->
             @if (Model.EncryptedDocuments != null && Model.EncryptedDocuments.Any())
             {
                 <ul>

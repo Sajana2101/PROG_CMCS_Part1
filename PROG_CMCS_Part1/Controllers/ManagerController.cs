@@ -7,14 +7,18 @@ namespace PROG_CMCS_Part1.Controllers
 {
     public class ManagerController : Controller
     {
+        // Service for encrypting and decrypting files
         private readonly FileEncryptionService _encryptionService;
-        private readonly long _maxFileSize = 5 * 1024 * 1024; 
+        // Maximum upload size (5 MB)
+        private readonly long _maxFileSize = 5 * 1024 * 1024;
+        // Allowed file types for claim uploads/downloads
         private readonly string[] _allowedExtensions = { ".pdf", ".docx", ".doc", ".xlsx", ".xls", ".jpg", ".jpeg", ".png", ".txt" };
-
+        // Inject the encryption service
         public ManagerController(FileEncryptionService encryptionService)
         {
             _encryptionService = encryptionService;
         }
+        // Show dashboard with optional status filter
         [HttpGet]
         public IActionResult Dashboard(string statusFilter)
         {
@@ -28,7 +32,9 @@ namespace PROG_CMCS_Part1.Controllers
             return View(claims); 
         }
 
-      
+
+        // Show details of a single claim
+
         [HttpGet]
         public IActionResult ClaimDetails(int id)
         {
@@ -41,10 +47,12 @@ namespace PROG_CMCS_Part1.Controllers
 
 
 
+        // Download and decrypt a specific file from a claim
         [HttpGet]
         public async Task<IActionResult> DownloadFile(int claimId, string file)
         {
             var claim = ClaimData.GetClaimById(claimId);
+            // Ensure claim and file exist
             if (claim == null || !claim.EncryptedDocuments.Contains(file))
                 return NotFound();
 
@@ -54,7 +62,9 @@ namespace PROG_CMCS_Part1.Controllers
 
             try
             {
+                // Decrypt the file into memory
                 var memoryStream = await _encryptionService.DecryptFileAsync(filePath);
+                // Use original filename for download
                 var originalName = claim.OriginalDocuments[claim.EncryptedDocuments.IndexOf(file)];
 
                 return File(memoryStream, "application/octet-stream", originalName);
@@ -64,7 +74,7 @@ namespace PROG_CMCS_Part1.Controllers
                 return BadRequest("Error decrypting the file.");
             }
         }
-        
+        // Update status of a claim and record the manager responsible
         [HttpPost]
         public IActionResult UpdateStatus(int id, string newStatus, string managerName)
         {

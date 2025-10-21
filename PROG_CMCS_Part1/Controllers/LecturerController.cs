@@ -12,15 +12,18 @@ namespace PROG_CMCS_Part1.Controllers
 {
     public class LecturerController : Controller
     {
+        // Service for encrypting and decrypting files
         private readonly FileEncryptionService _encryptionService;
-        private readonly long _maxFileSize = 5 * 1024 * 1024; 
+        // Maximum upload size (5 MB)
+        private readonly long _maxFileSize = 5 * 1024 * 1024;
+        // Allowed file types for claim uploads
         private readonly string[] _allowedExtensions = { ".pdf", ".docx", ".doc", ".xlsx", ".xls", ".jpg", ".jpeg", ".png", ".txt" };
-
+        // Inject the encryption service
         public LecturerController(FileEncryptionService encryptionService)
         {
             _encryptionService = encryptionService;
         }
-
+        // Show dashboard with optional status filter
         [HttpGet]
         public IActionResult Dashboard(string statusFilter)
         {
@@ -33,9 +36,10 @@ namespace PROG_CMCS_Part1.Controllers
             return View(claims);
         }
 
+        // Display claim submission form
         [HttpGet]
         public IActionResult SubmitClaim() => View();
-
+        // Handle new claim submission with file uploads
         [HttpPost]
         public async Task<IActionResult> SubmitClaim(
      string lecturerName,
@@ -50,7 +54,7 @@ namespace PROG_CMCS_Part1.Controllers
                 return View();
 
             uploadedFiles ??= new List<IFormFile>();
-
+            // Create new claim record
             var claim = new Claim
             {
                 LecturerName = lecturerName,
@@ -65,10 +69,10 @@ namespace PROG_CMCS_Part1.Controllers
 
            
             ClaimData.AddClaim(claim);
-
+            // Ensure folder exists for uploaded files
             var claimFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"claim-{claim.Id}");
             Directory.CreateDirectory(claimFolder);
-
+            // Process each uploaded file
             foreach (var file in uploadedFiles)
             {
                 var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
@@ -85,7 +89,7 @@ namespace PROG_CMCS_Part1.Controllers
                     return View(claim);
                 }
 
-               
+                // Encrypt file and save with random name
                 var encryptedName = $"{Path.GetFileNameWithoutExtension(Path.GetRandomFileName())}{ext}.enc";
                 var filePath = Path.Combine(claimFolder, encryptedName);
 
@@ -93,7 +97,7 @@ namespace PROG_CMCS_Part1.Controllers
                 using var stream = file.OpenReadStream();
                 await _encryptionService.EncryptFileAsync(stream, filePath);
 
-               
+                // Track original and encrypted file names in claim
                 claim.EncryptedDocuments.Add(encryptedName);
                 claim.OriginalDocuments.Add(file.FileName);
             }
@@ -105,31 +109,37 @@ namespace PROG_CMCS_Part1.Controllers
             return RedirectToAction("Dashboard");
         }
 
-
+        // Download and decrypt a specific file from a claim
         [HttpGet]
         public async Task<IActionResult> DownloadFile(int claimId, string file)
         {
             var claim = ClaimData.GetClaimById(claimId);
+            // Ensure claim and file exist
             if (claim == null || !claim.EncryptedDocuments.Contains(file))
                 return NotFound();
 
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"claim-{claimId}", file);
+            // Ensure file exists on disk
             if (!System.IO.File.Exists(filePath))
                 return NotFound();
 
             try
+
             {
+                // Decrypt the file into memory
                 var memoryStream = await _encryptionService.DecryptFileAsync(filePath);
+                // Use original filename for download
                 var originalName = claim.OriginalDocuments[claim.EncryptedDocuments.IndexOf(file)];
 
                 return File(memoryStream, "application/octet-stream", originalName);
             }
             catch
             {
+                // Return error if decryption fails
                 return BadRequest("Error decrypting the file.");
             }
         }
-
+        // Show details of a single claim
         [HttpGet]
         public IActionResult ClaimDetails(int id)
         {
