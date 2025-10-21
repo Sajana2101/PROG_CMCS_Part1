@@ -1,7 +1,11 @@
+using PROG_CMCS_Part1.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<FileEncryptionService>();
+
 
 var app = builder.Build();
 
