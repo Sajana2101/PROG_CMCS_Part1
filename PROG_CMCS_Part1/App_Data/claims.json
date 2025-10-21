@@ -1,0 +1,24 @@
+[
+  {
+    "Id": 1,
+    "LecturerName": "John Doe",
+    "ModuleCode": "INSY6589",
+    "HoursWorked": 24,
+    "HourlyRate": 100,
+    "TotalAmount": 2400,
+    "Comments": "nothing from my side",
+    "Status": "Approved",
+    "CoordinatorName": "Sajana Motheram",
+    "CoordinatorStatus": "Pending",
+    "ManagerName": "Amy",
+    "ManagerStatus": "Pending",
+    "Month": "October",
+    "DateSubmitted": "2025-10-21T12:32:51.383922+02:00",
+    "EncryptedDocuments": [
+      "nz4whits.txt.enc"
+    ],
+    "OriginalDocuments": [
+      "Supporting Document 1.txt"
+    ]
+  }
+]

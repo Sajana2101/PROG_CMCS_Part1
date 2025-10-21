@@ -1,72 +1,105 @@
-﻿@model IEnumerable<dynamic>
+﻿@model IEnumerable<PROG_CMCS_Part1.Models.Claim>
+
 @{
     ViewData["Title"] = "Coordinator Dashboard";
 }
 
 <h2>Claims to Review</h2>
-<!-- Filter form -->
 
-<form method="get" asp-action="Dashboard">
-    <label>Filter by Status: </label>
-    <select name="statusFilter" onchange="this.form.submit()">
-        <option value="All">All</option>
-        <option value="Pending Verification">Pending Verification</option>
-        <option value="Verified – Pending Approval">Verified – Pending Approval</option>
-        <option value="Approved">Approved</option>
-        <option value="Rejected">Rejected</option>
-    </select>
-    <button type="submit" name="statusFilter" value="All" class="btn btn-secondary">Reset</button>
-</form>
-<!-- Status colours -->
-@functions {
-    private string GetStatusClass(string status)
-    {
-        return status switch
-        {
-            "Approved" => "bg-success",
-            "Rejected" => "bg-danger",
-            "Pending Verification" => "bg-light text-dark",
-            "Verified – Pending Approval" => "bg-warning text-dark",
-            _ => "bg-secondary text-white"
-        };
-    }
-}
-<!-- Claims table -->
-<table class="table table-striped table-bordered">
+<table class="table table-bordered">
     <thead>
         <tr>
             <th>Claim ID</th>
+            <th>Lecturer</th>
             <th>Month</th>
+            <th>Total Amount</th>
             <th>Status</th>
+            <th>Coordinator</th>
+            <th>Supporting Document</th>
             <th>Actions</th>
         </tr>
     </thead>
     <tbody>
+
+        @functions {
+            private string GetStatusClass(string status)
+            {
+                return status switch
+                {
+                    "Approved" => "bg-success text-white",
+                    "Rejected" => "bg-danger text-white",
+                    "Pending Verification" => "bg-secondary text-white",
+                    "Verified – Pending Approval" => "bg-warning text-dark",
+                    _ => "bg-light text-dark"
+                };
+            }
+        }
+
         @foreach (var claim in Model)
         {
             <tr>
-                <td>@claim.ClaimId</td>
+                <td>@claim.Id</td>
+                <td>@claim.LecturerName</td>
                 <td>@claim.Month</td>
-                <td class="@GetStatusClass(claim.Status) text-center">@claim.Status</td>
+                <td>R @claim.TotalAmount</td>
 
+               
+                <td class="@GetStatusClass(claim.Status)">
+                    @claim.Status
+                </td>
+
+                <td>@claim.CoordinatorName</td>
+
+               
                 <td>
-                   
-                    @if (claim.Status == "Submitted" || claim.Status == "Pending Verification")
+                    @if (claim.EncryptedDocuments != null && claim.EncryptedDocuments.Any())
                     {
-                        <a class="btn btn-success" href="#">Verify</a>
-                        <a class="btn btn-primary" href="#">Approve</a>
-                        <a class="btn btn-danger" href="#">Reject</a>
-                        <a class="btn btn-info" href="/Coordinator/ClaimDetails/@claim.ClaimId">Details</a>
+                        <ul class="list-unstyled mb-0">
+                            @for (int i = 0; i < claim.EncryptedDocuments.Count; i++)
+                            {
+                                var encryptedFile = claim.EncryptedDocuments[i];
+                                var originalName = claim.OriginalDocuments.Count > i
+                                ? claim.OriginalDocuments[i]
+                                : encryptedFile;
+
+                                <li>
+                                    <a asp-action="DownloadFile"
+                                       asp-controller="Coordinator"
+                                       asp-route-claimId="@claim.Id"
+                                       asp-route-file="@encryptedFile"
+                                       class="btn btn-sm btn-outline-primary mb-1">
+                                        @originalName
+                                    </a>
+                                </li>
+                            }
+                        </ul>
                     }
-                    else if (claim.Status == "Verified – Pending Approval")
+                    else
                     {
-                        <a class="btn btn-primary" href="#">Approve</a>
-                        <a class="btn btn-danger" href="#">Reject</a>
-                        <a class="btn btn-info" href="/Coordinator/ClaimDetails/@claim.ClaimId">Details</a>
+                        <span>No document</span>
                     }
-                    else if (claim.Status == "Approved" || claim.Status == "Rejected")
+                </td>
+
+                
+                <td>
+                    @if (claim.Status == "Pending" || claim.Status == "Pending Verification")
                     {
-                        <a class="btn btn-info" href="/Coordinator/ClaimDetails/@claim.ClaimId">Details</a>
+                        <form asp-action="UpdateStatus" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@claim.Id" />
+                            <input type="hidden" name="status" value="Verified – Pending Approval" />
+                            <input type="text" name="coordinatorName" placeholder="Your Name" required class="form-control form-control-sm mb-1" />
+                            <button type="submit" class="btn btn-success btn-sm">Verify</button>
+                        </form>
+                        <form asp-action="UpdateStatus" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@claim.Id" />
+                            <input type="hidden" name="status" value="Rejected" />
+                            <input type="text" name="coordinatorName" placeholder="Your Name" required class="form-control form-control-sm mb-1" />
+                            <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a class="btn btn-info btn-sm" asp-action="ClaimDetails" asp-route-id="@claim.Id">Details</a>
                     }
                 </td>
             </tr>
