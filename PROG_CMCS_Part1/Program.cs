@@ -15,6 +15,7 @@ builder.Services.AddSession(options =>
 });
 
 builder.Services.AddScoped<FileEncryptionService>();
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -22,19 +23,17 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.AddSingleton<FileEncryptionService>();
-
-
-
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    await CreateHRRole(scope.ServiceProvider);
-    var svcProvider = scope.ServiceProvider;
-    var db = svcProvider.GetRequiredService<ApplicationDbContext>();
+    var services = scope.ServiceProvider;
+
+    var db = services.GetRequiredService<ApplicationDbContext>();
     db.Database.EnsureCreated();
-    await CreateHRRole(svcProvider);
+
+    await EnsureRoles(services);
+    await CreateHRRole(services);
 }
 
 if (!app.Environment.IsDevelopment())
@@ -43,13 +42,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
 app.UseRouting();
+
 app.UseAuthentication();
-
-
 app.UseAuthorization();
 
 app.UseSession();
@@ -58,8 +56,22 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-
 app.Run();
+
+async Task EnsureRoles(IServiceProvider services)
+{
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+    string[] roles = { "HR", "Lecturer", "Coordinator", "Manager" };
+
+    foreach (var role in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+        {
+            await roleManager.CreateAsync(new IdentityRole(role));
+        }
+    }
+}
+
 async Task CreateHRRole(IServiceProvider services)
 {
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
@@ -68,7 +80,7 @@ async Task CreateHRRole(IServiceProvider services)
     if (!await roleManager.RoleExistsAsync("HR"))
         await roleManager.CreateAsync(new IdentityRole("HR"));
 
-    var hrUser = await userManager.FindByEmailAsync("hr@system.com");
+    var hrUser = await userManager.FindByEmailAsync("hr@example.com");
 
     if (hrUser == null)
     {
