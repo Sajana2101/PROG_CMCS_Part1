@@ -14,12 +14,15 @@
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">PROG_CMCS_Part1</a>
+
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
+
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+
                         <ul class="navbar-nav flex-grow-1">
                             @{
                                 var controller = ViewContext.RouteData.Values["controller"]?.ToString();
@@ -32,17 +35,11 @@
                                     <li class="nav-item">
                                         <a class="nav-link text-dark" asp-controller="Lecturer" asp-action="SubmitClaim">Submit Claim</a>
                                     </li>
-                                    <li class="nav-item">
-                                        <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">Sign Out</a>
-                                    </li>
                                 }
                                 else if (controller == "Coordinator")
                                 {
                                     <li class="nav-item">
                                         <a class="nav-link text-dark" asp-controller="Coordinator" asp-action="Dashboard">Dashboard</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">Sign Out</a>
                                     </li>
                                 }
                                 else if (controller == "Manager")
@@ -50,24 +47,35 @@
                                     <li class="nav-item">
                                         <a class="nav-link text-dark" asp-controller="Manager" asp-action="Dashboard">Dashboard</a>
                                     </li>
-                                    <li class="nav-item">
-                                        <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">Sign Out</a>
-                                    </li>
-                                }
-                                else
-                                {
-                                    <li class="nav-item">
-                                        <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">Sign Out</a>
-                                    </li>
                                 }
                             }
                         </ul>
-                    </div>
 
+                        <div class="d-flex align-items-center">
+                            @if (User.Identity.IsAuthenticated)
+                            {
+                                <a asp-controller="Account" asp-action="Logout"
+                                   style="color:white; text-decoration:none; padding:6px 12px; border-radius:6px; background-color:#C0392B; transition:background-color 0.3s;"
+                                   onmouseover="this.style.backgroundColor='#992222'" onmouseout="this.style.backgroundColor='#C0392B'">
+                                    Logout
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-controller="Account" asp-action="Login"
+                                   style="color:white; text-decoration:none; padding:6px 12px; border-radius:6px; background-color:#2980B9; transition:background-color 0.3s;"
+                                   onmouseover="this.style.backgroundColor='#1f5f85'" onmouseout="this.style.backgroundColor='#2980B9'">
+                                    Login
+                                </a>
+                            }
+                        </div>
+
+                    </div>
                 </div>
             </div>
         </nav>
     </header>
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
@@ -79,6 +87,7 @@
             &copy; 2025 - PROG_CMCS_Part1 - <a asp-area="" asp-controller="Home" asp-action=""></a>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
