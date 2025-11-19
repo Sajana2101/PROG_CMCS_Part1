@@ -2,65 +2,76 @@
 @{
     ViewData["Title"] = "Submit Claim";
 }
-<!-- Form for lecturers to submit claims -->
+
 <h2>Submit Claim</h2>
 
 <form asp-action="SubmitClaim" asp-controller="Lecturer" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="All" class="text-danger mb-2"></div>
+
+    @if (TempData["FormErrors"] != null)
+    {
+        <div class="alert alert-warning">@TempData["FormErrors"]</div>
+    }
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+
     <div class="mb-3 col-md-4">
-        <!-- Lecturer name -->
-        <label>Lecturer Name:</label>
-        <input type="text" name="lecturerName" class="form-control" />
+        <label asp-for="LecturerName">Lecturer Name:</label>
+        <input asp-for="LecturerName" class="form-control" readonly />
     </div>
-    <!-- Module code -->
+
     <div class="mb-3 col-md-4">
-        <label>Module Code:</label>
-        <input type="text" name="moduleCode" class="form-control" />
+        <label asp-for="ModuleCode">Module Code:</label>
+        <input asp-for="ModuleCode" class="form-control" />
     </div>
-    <!-- Claim month -->
+
     <div class="mb-3 col-md-4">
-        <label>Month:</label>
-        <select name="month" class="form-control">
+        <label asp-for="Month">Month:</label>
+        <select asp-for="Month" class="form-control">
             <option value="">Select Month</option>
-            <option value="January">January</option>
-            <option value="February">February</option>
-            <option value="March">March</option>
-            <option value="April">April</option>
-            <option value="May">May</option>
-            <option value="June">June</option>
-            <option value="July">July</option>
-            <option value="August">August</option>
-            <option value="September">September</option>
-            <option value="October">October</option>
-            <option value="November">November</option>
-            <option value="December">December</option>
+            @for (int m = 1; m <= 12; m++)
+            {
+                var monthName = new DateTime(DateTime.UtcNow.Year, m, 1).ToString("MMMM yyyy");
+                <option value="@monthName" selected="@(Model.Month == monthName ? "selected" : null)">@monthName</option>
+            }
         </select>
     </div>
-    <!-- Hours worked -->
+
     <div class="mb-3 col-md-4">
-        <label>Hours Worked:</label>
-        <input type="number" name="hoursWorked" class="form-control" />
+        <label asp-for="HoursWorked">Hours Worked:</label>
+        <input asp-for="HoursWorked" class="form-control" />
+        <span asp-validation-for="HoursWorked" class="text-danger"></span>
     </div>
-    <!-- Hourly rate -->
+
     <div class="mb-3 col-md-4">
-        <label>Hourly Rate:</label>
-        <input type="number" step="0.01" name="hourlyRate" class="form-control" />
+        <label asp-for="HourlyRate">Hourly Rate:</label>
+        <input type="text" class="form-control" value="@Model.HourlyRate" readonly />
+        <input type="hidden" asp-for="HourlyRate" />
     </div>
-    <!-- Comments -->
+
+
     <div class="mb-3 col-md-4">
-        <label>Comments:</label>
-        <textarea name="comments" class="form-control"></textarea>
+        <label asp-for="Comments">Comments:</label>
+        <textarea asp-for="Comments" class="form-control"></textarea>
     </div>
-    <!-- File upload -->
-   
+
     <div class="mb-3 col-md-4">
         <label>Upload Supporting Documents:</label>
         <input type="file" name="uploadedFiles" class="form-control" multiple />
         <small class="form-text text-muted">Maximum file size per file: 5MB</small>
         <small class="form-text text-muted">Allowed file types: PDF, DOCX, DOC, XLSX, XLS, JPG, JPEG, PNG, TXT</small>
     </div>
-    <!-- Submit and back buttons -->
+
     <div class="mt-3">
         <button type="submit" class="btn btn-success me-2">Submit</button>
         <a class="btn btn-secondary" href="/Lecturer/Dashboard">Back to Dashboard</a>
     </div>
 </form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

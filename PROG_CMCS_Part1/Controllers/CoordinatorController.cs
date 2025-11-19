@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PROG_CMCS_Part1.Data;
 using PROG_CMCS_Part1.Models;
 using PROG_CMCS_Part1.Services;
@@ -7,82 +8,98 @@ namespace PROG_CMCS_Part1.Controllers
 {
     public class CoordinatorController : Controller
     {
-
-        // Service for handling file encryption and decryption
+        private readonly ApplicationDbContext _context;
         private readonly FileEncryptionService _encryptionService;
-        // Maximum file size allowed for uploads (5 MB)
+
         private readonly long _maxFileSize = 5 * 1024 * 1024;
-        // List of file extensions allowed for claims
-        private readonly string[] _allowedExtensions = { ".pdf", ".docx", ".doc", ".xlsx", ".xls", ".jpg", ".jpeg", ".png", ".txt" };
-        // Inject the file encryption service
-        public CoordinatorController(FileEncryptionService encryptionService)
+        private readonly string[] _allowedExtensions =
+            { ".pdf", ".docx", ".doc", ".xlsx", ".xls", ".jpg", ".jpeg", ".png", ".txt" };
+
+        public CoordinatorController(ApplicationDbContext context, FileEncryptionService encryptionService)
         {
+            _context = context;
             _encryptionService = encryptionService;
         }
-        // Display all claims on the coordinator dashboard
-        [HttpGet]
-        public IActionResult Dashboard()
+
+        public async Task<IActionResult> Dashboard()
         {
-            var claims = ClaimData.GetAllClaims();
-            return View(claims); 
+            var claims = await _context.Claims.ToListAsync();
+
+            foreach (var c in claims)
+                c.LoadDocumentLists();
+
+            return View(claims);
         }
 
-        // Update the status and coordinator assigned to a specific claim
+
         [HttpPost]
-        public IActionResult UpdateStatus(int id, string status, string coordinatorName)
+        public async Task<IActionResult> UpdateStatus(int id, string status, string coordinatorName)
         {
-            var claim = ClaimData.GetClaimById(id);
+            var claim = await _context.Claims.FindAsync(id);
+
             if (claim == null)
                 return NotFound();
 
             claim.Status = status;
             claim.CoordinatorName = coordinatorName;
 
-            ClaimData.UpdateClaim(claim);
+            _context.Claims.Update(claim);
+            await _context.SaveChangesAsync();
 
             return RedirectToAction("Dashboard");
         }
 
 
-        // Download and decrypt a specific file attached to a claim
-        [HttpGet]
         public async Task<IActionResult> DownloadFile(int claimId, string file)
         {
-            var claim = ClaimData.GetClaimById(claimId);
-            // Ensure claim and file exist
-            if (claim == null || !claim.EncryptedDocuments.Contains(file))
+            var claim = await _context.Claims.FindAsync(claimId);
+
+            if (claim == null)
                 return NotFound();
 
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"claim-{claimId}", file);
-            // Ensure file exists on disk
+            claim.LoadDocumentLists();
+
+            if (!claim.EncryptedDocuments.Contains(file))
+                return NotFound();
+
+            var filePath = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot",
+                "uploads",
+                $"claim-{claimId}",
+                file
+            );
+
             if (!System.IO.File.Exists(filePath))
                 return NotFound();
 
             try
             {
-                // Decrypt the file into memory
                 var memoryStream = await _encryptionService.DecryptFileAsync(filePath);
-                // Use original filename for download
-                var originalName = claim.OriginalDocuments[claim.EncryptedDocuments.IndexOf(file)];
+
+                var index = claim.EncryptedDocuments.IndexOf(file);
+                var originalName = claim.OriginalDocuments[index];
 
                 return File(memoryStream, "application/octet-stream", originalName);
             }
             catch
-
             {
-                // Return error if decryption fails
                 return BadRequest("Error decrypting the file.");
             }
         }
-        // Show details for a single claim
+
+     
         [HttpGet]
-        public IActionResult ClaimDetails(int id)
+        public async Task<IActionResult> ClaimDetails(int id)
         {
-            var claim = ClaimData.GetClaimById(id);
+            var claim = await _context.Claims.FindAsync(id);
+
             if (claim == null)
                 return NotFound();
 
-            return View(claim); 
+            claim.LoadDocumentLists(); 
+
+            return View(claim);
         }
     }
 }

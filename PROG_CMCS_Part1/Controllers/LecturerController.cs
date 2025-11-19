@@ -1,152 +1,253 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PROG_CMCS_Part1.Data;
 using PROG_CMCS_Part1.Models;
 using PROG_CMCS_Part1.Services;
-using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.AspNetCore.Http;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace PROG_CMCS_Part1.Controllers
 {
+    [Authorize(Roles = "Lecturer")]
     public class LecturerController : Controller
     {
-        // Service for encrypting and decrypting files
+        private readonly ApplicationDbContext _context;
         private readonly FileEncryptionService _encryptionService;
-        // Maximum upload size (5 MB)
+        private readonly UserManager<ApplicationUser> _userManager;
+
         private readonly long _maxFileSize = 5 * 1024 * 1024;
-        // Allowed file types for claim uploads
         private readonly string[] _allowedExtensions = { ".pdf", ".docx", ".doc", ".xlsx", ".xls", ".jpg", ".jpeg", ".png", ".txt" };
-        // Inject the encryption service
-        public LecturerController(FileEncryptionService encryptionService)
+
+        public LecturerController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, FileEncryptionService encryptionService)
         {
+            _context = context;
+            _userManager = userManager;
             _encryptionService = encryptionService;
         }
-        // Show dashboard with optional status filter
+
         [HttpGet]
-        public IActionResult Dashboard(string statusFilter)
+        public async Task<IActionResult> Dashboard(string statusFilter)
         {
-            var claims = ClaimData.GetAllClaims();
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var claims = await _context.Claims
+                                       .Where(c => c.UserId == user.Id)
+                                       .Include(c => c.User)
+                                       .ToListAsync();
+
+            foreach (var c in claims)
+                c.LoadDocumentLists();
 
             if (!string.IsNullOrEmpty(statusFilter) && statusFilter != "All")
                 claims = claims.Where(c => c.Status == statusFilter).ToList();
 
             ViewBag.StatusFilter = statusFilter ?? "All";
+            ViewBag.PendingCount = claims.Count(c => c.Status == "Pending");
+            ViewBag.ApprovedCount = claims.Count(c => c.Status == "Approved");
+            ViewBag.RejectedCount = claims.Count(c => c.Status == "Rejected");
+
             return View(claims);
         }
 
-        // Display claim submission form
         [HttpGet]
-        public IActionResult SubmitClaim() => View();
-        // Handle new claim submission with file uploads
-        [HttpPost]
-        public async Task<IActionResult> SubmitClaim(
-     string lecturerName,
-     string moduleCode,
-     string month,
-     int hoursWorked,
-     decimal hourlyRate,
-     string? comments,
-     List<IFormFile>? uploadedFiles)
+        public async Task<IActionResult> SubmitClaim()
         {
-            if (!ModelState.IsValid)
-                return View();
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
 
-            uploadedFiles ??= new List<IFormFile>();
-            // Create new claim record
-            var claim = new Claim
+            var model = new Claim
             {
-                LecturerName = lecturerName,
-                ModuleCode = moduleCode,
-                Month = month,
-                HoursWorked = hoursWorked,
-                HourlyRate = hourlyRate,
-                Comments = comments,
-                Status = "Pending",
-                DateSubmitted = DateTime.Now
+                UserId = user.Id,
+                LecturerName = $"{user.FirstName} {user.LastName}",
+                HourlyRate = user.HourlyRate,
+                Month = DateTime.UtcNow.ToString("MMMM yyyy")
             };
 
-           
-            ClaimData.AddClaim(claim);
-            // Ensure folder exists for uploaded files
-            var claimFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"claim-{claim.Id}");
-            Directory.CreateDirectory(claimFolder);
-            // Process each uploaded file
-            foreach (var file in uploadedFiles)
+            return View(model);
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SubmitClaim(Claim newClaim, List<IFormFile>? uploadedFiles)
+        {
+            if (!User.Identity.IsAuthenticated)
+                return Challenge();
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return Challenge();
+
+            
+            uploadedFiles ??= new List<IFormFile>();
+
+          
+            newClaim.PopulateFromUser(user);         
+            newClaim.DateSubmitted = DateTime.UtcNow;
+            newClaim.Status = "Pending";
+
+         
+            if (!ModelState.IsValid)
             {
-                var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+              
+                var errors = ModelState
+                    .Where(kvp => kvp.Value.Errors.Count > 0)
+                    .SelectMany(kvp => kvp.Value.Errors.Select(e => (Key: kvp.Key, Error: e.ErrorMessage)))
+                    .ToList();
 
-                if (!_allowedExtensions.Contains(ext))
-                {
-                    ModelState.AddModelError("", $"File type {ext} not allowed.");
-                    return View(claim);
-                }
+                if (errors.Any())
+                    TempData["FormErrors"] = string.Join(" • ", errors.Select(e => $"{e.Key}: {e.Error}"));
 
-                if (file.Length > _maxFileSize)
-                {
-                    ModelState.AddModelError("", $"File {file.FileName} exceeds {_maxFileSize / (1024 * 1024)} MB limit.");
-                    return View(claim);
-                }
+                return View(newClaim);
+            }
 
-                // Encrypt file and save with random name
-                var encryptedName = $"{Path.GetFileNameWithoutExtension(Path.GetRandomFileName())}{ext}.enc";
-                var filePath = Path.Combine(claimFolder, encryptedName);
+          
+            var month = newClaim.Month ?? DateTime.UtcNow.ToString("MMMM yyyy");
+            var monthlyHours = await _context.Claims
+                .Where(c => c.UserId == user.Id && c.Month == month)
+                .Select(c => (int?)c.HoursWorked)
+                .SumAsync() ?? 0;
 
-               
-                using var stream = file.OpenReadStream();
-                await _encryptionService.EncryptFileAsync(stream, filePath);
-
-                // Track original and encrypted file names in claim
-                claim.EncryptedDocuments.Add(encryptedName);
-                claim.OriginalDocuments.Add(file.FileName);
+            if (monthlyHours + newClaim.HoursWorked > user.MaxHours)
+            {
+                ModelState.AddModelError(string.Empty, $"You have already submitted {monthlyHours} hours this month. Max allowed: {user.MaxHours}.");
+                TempData["FormErrors"] = string.Join(" • ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                return View(newClaim);
             }
 
            
-            ClaimData.UpdateClaim(claim);
+            try
+            {
+                _context.Claims.Add(newClaim);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", "Could not save claim. " + ex.Message);
+                TempData["FormErrors"] = string.Join(" • ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                return View(newClaim);
+            }
+
+           
+            var claimFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"claim-{newClaim.Id}");
+            Directory.CreateDirectory(claimFolder);
+
+            foreach (var file in uploadedFiles)
+            {
+                try
+                {
+                    if (file == null || file.Length == 0)
+                        continue;
+
+                    var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+                    if (!_allowedExtensions.Contains(ext))
+                    {
+                        
+                        ModelState.AddModelError("", $"File type {ext} not allowed for {file.FileName}.");
+                        continue;
+                    }
+
+                    if (file.Length > _maxFileSize)
+                    {
+                        ModelState.AddModelError("", $"File {file.FileName} exceeds {_maxFileSize / (1024 * 1024)} MB limit.");
+                        continue;
+                    }
+
+                    var encryptedName = $"{Path.GetFileNameWithoutExtension(Path.GetRandomFileName())}{ext}.enc";
+                    var filePath = Path.Combine(claimFolder, encryptedName);
+
+                  
+                    using var stream = file.OpenReadStream();
+                    await _encryptionService.EncryptFileAsync(stream, filePath);
+
+                    
+                    newClaim.EncryptedDocuments.Add(encryptedName);
+                    newClaim.OriginalDocuments.Add(file.FileName);
+                }
+                catch (Exception ex)
+                {
+                   
+                    ModelState.AddModelError("", $"Failed to process {file?.FileName}: {ex.Message}");
+                }
+            }
+
+           
+            newClaim.SaveDocumentLists();
+
+            try
+            {
+                _context.Claims.Update(newClaim);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", "Failed to update claim with file data. " + ex.Message);
+                TempData["FormErrors"] = string.Join(" • ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                return View(newClaim);
+            }
+
+           
+            if (ModelState.ErrorCount > 0)
+            {
+                TempData["FormErrors"] = string.Join(" • ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                return View(newClaim);
+            }
 
             TempData["Success"] = "Your claim has been securely submitted!";
             return RedirectToAction("Dashboard");
         }
 
-        // Download and decrypt a specific file from a claim
+
+
         [HttpGet]
         public async Task<IActionResult> DownloadFile(int claimId, string file)
         {
-            var claim = ClaimData.GetClaimById(claimId);
-            // Ensure claim and file exist
-            if (claim == null || !claim.EncryptedDocuments.Contains(file))
-                return NotFound();
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var claim = await _context.Claims.FindAsync(claimId);
+            if (claim == null) return NotFound();
+            if (claim.UserId != user.Id) return Forbid();
+
+            claim.LoadDocumentLists();
+
+            if (!claim.EncryptedDocuments.Contains(file)) return NotFound();
 
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"claim-{claimId}", file);
-            // Ensure file exists on disk
-            if (!System.IO.File.Exists(filePath))
-                return NotFound();
+            if (!System.IO.File.Exists(filePath)) return NotFound();
 
             try
-
             {
-                // Decrypt the file into memory
                 var memoryStream = await _encryptionService.DecryptFileAsync(filePath);
-                // Use original filename for download
-                var originalName = claim.OriginalDocuments[claim.EncryptedDocuments.IndexOf(file)];
+                var originalName = claim.OriginalDocuments.ElementAtOrDefault(claim.EncryptedDocuments.IndexOf(file)) ?? file;
 
                 return File(memoryStream, "application/octet-stream", originalName);
             }
             catch
             {
-                // Return error if decryption fails
                 return BadRequest("Error decrypting the file.");
             }
         }
-        // Show details of a single claim
-        [HttpGet]
-        public IActionResult ClaimDetails(int id)
-        {
-            var claim = ClaimData.GetClaimById(id);
-            if (claim == null)
-                return NotFound();
 
+        [HttpGet]
+        public async Task<IActionResult> ClaimDetails(int id)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var claim = await _context.Claims
+                                      .Include(c => c.User)
+                                      .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (claim == null) return NotFound();
+            if (claim.UserId != user.Id) return Forbid();
+
+            claim.LoadDocumentLists();
             return View(claim);
         }
     }

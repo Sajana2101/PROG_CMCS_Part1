@@ -38,5 +38,21 @@
     "OriginalDocuments": [
       "Supporting Document 1.txt"
     ]
+  },
+  {
+    "Id": 3,
+    "LecturerName": "John Doe",
+    "ModuleCode": "jjn",
+    "HoursWorked": 90,
+    "HourlyRate": 90,
+    "TotalAmount": 8100,
+    "Comments": null,
+    "Status": "Pending",
+    "CoordinatorName": "-",
+    "ManagerName": "-",
+    "Month": "February",
+    "DateSubmitted": "2025-11-19T13:29:25.8529057+02:00",
+    "EncryptedDocuments": [],
+    "OriginalDocuments": []
   }
 ]

@@ -20,7 +20,12 @@ namespace PROG_CMCS_Part1.Data
             builder.Entity<ApplicationUser>()
                    .Property(u => u.HourlyRate)
                    .HasPrecision(18, 2);
+
+            builder.Entity<Claim>()
+               .Property(u => u.HourlyRate)
+               .HasPrecision(18, 2);
         }
-        public DbSet<PROG_CMCS_Part1.Models.HRManagement> HRManagement { get; set; } = default!;
+        public DbSet<Claim> Claims { get; set; }
+
     }
 }

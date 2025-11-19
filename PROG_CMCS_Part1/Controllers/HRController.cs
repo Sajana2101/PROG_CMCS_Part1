@@ -183,7 +183,7 @@ namespace PROG_CMCS_Part1.Controllers
             if (user == null)
                 return NotFound();
 
-            var roles = await _userManager.GetRolesAsync(user);
+            var role = (await _userManager.GetRolesAsync(user)).FirstOrDefault();
 
             var model = new HRManagement
             {
@@ -193,7 +193,7 @@ namespace PROG_CMCS_Part1.Controllers
                 Email = user.Email,
                 HourlyRate = user.HourlyRate,
                 MaxHours = user.MaxHours,
-                Role = roles.FirstOrDefault()
+                Role = role
             };
 
             return View(model);
@@ -206,7 +206,7 @@ namespace PROG_CMCS_Part1.Controllers
             if (user == null)
                 return NotFound();
 
-            var roles = await _userManager.GetRolesAsync(user);
+            var role = (await _userManager.GetRolesAsync(user)).FirstOrDefault();
 
             var model = new HRManagement
             {
@@ -216,7 +216,7 @@ namespace PROG_CMCS_Part1.Controllers
                 Email = user.Email,
                 HourlyRate = user.HourlyRate,
                 MaxHours = user.MaxHours,
-                Role = roles.FirstOrDefault()
+                Role = role
             };
 
             return View(model);
@@ -234,7 +234,7 @@ namespace PROG_CMCS_Part1.Controllers
             if (result.Succeeded)
                 return RedirectToAction("Index");
 
-            // If delete fails → rebuild model so View works
+          
             var roles = await _userManager.GetRolesAsync(user);
             var model = new HRManagement
             {
