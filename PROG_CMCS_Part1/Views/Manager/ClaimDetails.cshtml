@@ -1,90 +1,87 @@
 ﻿@model PROG_CMCS_Part1.Models.Claim
-@using System.IO
 
 @{
     ViewData["Title"] = "Claim Details";
 }
 
-<!-- Claim details table -->
-<!-- This details page is the same as the other details pages -->
+<div class="container mt-5">
+    <div class="card shadow-lg p-4" style="border-radius: 12px; max-width: 800px; margin: auto;">
+        <h3 class="text-center mb-4" style="font-weight: 600;">
+            <i class="bi bi-file-earmark-text"></i> Claim Details
+        </h3>
+
+        <hr />
+
+        <dl class="row mt-3">
+            <dt class="col-sm-4 fw-bold text-secondary">Lecturer</dt>
+            <dd class="col-sm-8">@Model.LecturerName</dd>
+
+            <dt class="col-sm-4 fw-bold text-secondary">Module Code</dt>
+            <dd class="col-sm-8">@Model.ModuleCode</dd>
+
+            <dt class="col-sm-4 fw-bold text-secondary">Month</dt>
+            <dd class="col-sm-8">@Model.Month</dd>
+
+            <dt class="col-sm-4 fw-bold text-secondary">Hours Worked</dt>
+            <dd class="col-sm-8">@Model.HoursWorked</dd>
+
+            <dt class="col-sm-4 fw-bold text-secondary">Hourly Rate</dt>
+            <dd class="col-sm-8">R @Model.HourlyRate</dd>
+
+            <dt class="col-sm-4 fw-bold text-secondary">Total Amount</dt>
+            <dd class="col-sm-8">R @Model.TotalAmount</dd>
+
+            <dt class="col-sm-4 fw-bold text-secondary">Status</dt>
+            <dd class="col-sm-8">@Model.Status</dd>
+
+            <dt class="col-sm-4 fw-bold text-secondary">Coordinator</dt>
+            <dd class="col-sm-8">@(!string.IsNullOrEmpty(Model.CoordinatorName) ? Model.CoordinatorName : "-")</dd>
+
+            <dt class="col-sm-4 fw-bold text-secondary">Manager</dt>
+            <dd class="col-sm-8">@(!string.IsNullOrEmpty(Model.ManagerName) ? Model.ManagerName : "-")</dd>
+
+            <dt class="col-sm-4 fw-bold text-secondary">Comments</dt>
+            <dd class="col-sm-8">@(!string.IsNullOrEmpty(Model.Comments) ? Model.Comments : "-")</dd>
+
+            <dt class="col-sm-4 fw-bold text-secondary">Date Submitted</dt>
+            <dd class="col-sm-8">@Model.DateSubmitted.ToString("dd MMM yyyy")</dd>
+
+            <dt class="col-sm-4 fw-bold text-secondary">Uploaded Documents</dt>
+            <dd class="col-sm-8">
+                @if (Model.EncryptedDocuments != null && Model.EncryptedDocuments.Any())
+                {
+                    <ul class="list-unstyled">
+                        @for (int i = 0; i < Model.EncryptedDocuments.Count; i++)
+                        {
+                            var encryptedFile = Model.EncryptedDocuments[i];
+                            var originalName = Model.OriginalDocuments.Count > i
+                            ? Model.OriginalDocuments[i]
+                            : encryptedFile;
+
+                            <li>
+                                <a asp-action="DownloadFile"
+                                   asp-controller="Lecturer"
+                                   asp-route-claimId="@Model.Id"
+                                   asp-route-file="@encryptedFile"
+                                   class="link-primary">
+                                    @originalName
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <span class="text-muted">No documents uploaded</span>
+                }
+            </dd>
+        </dl>
+
+        <div class="mt-4 text-center">
+            <a asp-controller="Manager" asp-action="Dashboard" class="btn btn-secondary px-4">
+                Back to Dashboard
+            </a>
+        </div>
 
 
-<h2>Claim Details</h2>
-
-<table class="table table-bordered">
-    <tr>
-        <th>Lecturer</th>
-        <td>@Model.LecturerName</td>
-    </tr>
-    <tr>
-        <th>Module Code</th>
-        <td>@Model.ModuleCode</td>
-    </tr>
-    <tr>
-        <th>Month</th>
-        <td>@Model.Month</td>
-    </tr>
-    <tr>
-        <th>Hours Worked</th>
-        <td>@Model.HoursWorked</td>
-    </tr>
-    <tr>
-        <th>Hourly Rate</th>
-        <td>R @Model.HourlyRate</td>
-    </tr>
-    <tr>
-        <th>Total Amount</th>
-        <td>R @Model.TotalAmount</td>
-    </tr>
-    <tr>
-        <th>Status</th>
-        <td>@Model.Status</td>
-    </tr>
-    <tr>
-        <th>Coordinator</th>
-        <td>@(!string.IsNullOrEmpty(Model.CoordinatorName) ? Model.CoordinatorName : "-")</td>
-    </tr>
-   
-    <tr>
-        <th>Manager</th>
-        <td>@(!string.IsNullOrEmpty(Model.ManagerName) ? Model.ManagerName : "-")</td>
-    </tr>
-   
-    <tr>
-        <th>Comments</th>
-        <td>@(!string.IsNullOrEmpty(Model.Comments) ? Model.Comments : "-")</td>
-    </tr>
-    <tr>
-        <th>Date Submitted</th>
-        <td>@Model.DateSubmitted.ToString("dd MMM yyyy")</td>
-    </tr>
-    <tr>
-        <th>Uploaded Documents</th>
-        <td>
-            @if (Model.EncryptedDocuments != null && Model.EncryptedDocuments.Any())
-            {
-                <ul>
-                    @for (int i = 0; i < Model.EncryptedDocuments.Count; i++)
-                    {
-                        var encryptedFile = Model.EncryptedDocuments[i];
-                        var originalName = Model.OriginalDocuments.Count > i
-                        ? Model.OriginalDocuments[i]
-                        : encryptedFile;
-
-                        <li>
-                            <a asp-action="DownloadFile"
-                               asp-controller="Lecturer"
-                               asp-route-claimId="@Model.Id"
-                               asp-route-file="@encryptedFile">
-                                @originalName
-                            </a>
-                        </li>
-                    }
-                </ul>
-            }
-            else
-            {
-                <span>No documents uploaded</span>
-            }
-        </td>
-    </tr>
+</div>

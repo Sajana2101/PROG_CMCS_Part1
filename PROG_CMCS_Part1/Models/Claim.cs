@@ -20,7 +20,7 @@ namespace PROG_CMCS_Part1.Models
         [Key]
         public int Id { get; set; }
 
-        // Lecturer info
+        
         public string? LecturerName { get; set; }
         public string? ModuleCode { get; set; }
 
@@ -34,22 +34,20 @@ namespace PROG_CMCS_Part1.Models
         public int HoursWorked { get; set; }
         public decimal HourlyRate { get; set; }
 
-        // Computed (not stored) total
         [NotMapped]
         public decimal TotalAmount => HoursWorked * HourlyRate;
 
         public string? Comments { get; set; }
 
-        // Workflow status
+       
         public string? Status { get; set; } = ClaimStatus.Pending;
 
-        // Coordinator fields (new)
         public string? CoordinatorId { get; set; }
         public string CoordinatorName { get; set; } = "-";
         public string? CoordinatorComment { get; set; }
         public DateTime? DateVerified { get; set; }
 
-        // Manager fields (optional additions)
+      
         public string? ManagerId { get; set; }
         public string ManagerName { get; set; } = "-";
         public string? ManagerComment { get; set; }
@@ -58,7 +56,7 @@ namespace PROG_CMCS_Part1.Models
         public string? Month { get; set; }
         public DateTime DateSubmitted { get; set; }
 
-        // Document storage (kept as before)
+        
         [NotMapped]
         public List<string> EncryptedDocuments { get; set; } = new List<string>();
 
