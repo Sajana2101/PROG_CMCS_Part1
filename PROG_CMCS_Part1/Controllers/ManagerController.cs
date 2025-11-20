@@ -1,32 +1,39 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PROG_CMCS_Part1.Data;
 using PROG_CMCS_Part1.Models;
 using PROG_CMCS_Part1.Services;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace PROG_CMCS_Part1.Controllers
 {
+    [Authorize(Roles = "Manager")]
     public class ManagerController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly FileEncryptionService _encryptionService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        private readonly long _maxFileSize = 5 * 1024 * 1024;
-        private readonly string[] _allowedExtensions = { ".pdf", ".docx", ".doc", ".xlsx", ".xls", ".jpg", ".jpeg", ".png", ".txt" };
-
-        public ManagerController(ApplicationDbContext context, FileEncryptionService encryptionService)
+        public ManagerController(ApplicationDbContext context, FileEncryptionService encryptionService, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _encryptionService = encryptionService;
+            _userManager = userManager;
         }
 
         [HttpGet]
         public async Task<IActionResult> Dashboard(string statusFilter)
         {
-            var claims = await _context.Claims.ToListAsync();
+            // Only show claims that are Verified, Approved, or Rejected
+            var claims = await _context.Claims
+                .Where(c => c.Status == ClaimStatus.Verified || c.Status == ClaimStatus.Approved || c.Status == ClaimStatus.Rejected)
+                .OrderByDescending(c => c.DateSubmitted)
+                .ToListAsync();
 
             foreach (var c in claims)
                 c.LoadDocumentLists();
@@ -57,12 +64,10 @@ namespace PROG_CMCS_Part1.Controllers
                 return NotFound();
 
             claim.LoadDocumentLists();
-
             if (!claim.EncryptedDocuments.Contains(file))
                 return NotFound();
 
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"claim-{claimId}", file);
-
             if (!System.IO.File.Exists(filePath))
                 return NotFound();
 
@@ -80,19 +85,40 @@ namespace PROG_CMCS_Part1.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> UpdateStatus(int id, string newStatus, string managerName)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateStatus(int id, string newStatus, string? comment)
         {
+            if (string.IsNullOrWhiteSpace(newStatus))
+                return BadRequest("Status is required.");
+
+            if (newStatus != ClaimStatus.Approved && newStatus != ClaimStatus.Rejected)
+                return BadRequest("Invalid status.");
+
             var claim = await _context.Claims.FirstOrDefaultAsync(c => c.Id == id);
             if (claim == null)
                 return NotFound();
 
-            claim.Status = newStatus;
-            claim.ManagerName = managerName;
+            if (claim.Status != ClaimStatus.Verified)
+                return BadRequest("Only verified claims can be processed by a manager.");
 
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return Unauthorized();
+
+            claim.Status = newStatus;
+            claim.ManagerId = user.Id;
+            claim.ManagerName = $"{user.FirstName} {user.LastName}";
+            claim.DateApproved = DateTime.UtcNow;
+
+            if (newStatus == ClaimStatus.Rejected)
+                claim.ManagerComment = comment?.Trim();
+
+            _context.Claims.Update(claim);
             await _context.SaveChangesAsync();
 
-            TempData["Success"] = $"Claim {id} has been {newStatus.ToLower()} by {managerName}.";
+            TempData["Success"] = $"Claim {id} has been {newStatus.ToLower()} by {claim.ManagerName}.";
             return RedirectToAction("Dashboard");
         }
     }
 }
+

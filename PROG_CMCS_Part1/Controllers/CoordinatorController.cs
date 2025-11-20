@@ -1,11 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PROG_CMCS_Part1.Data;
 using PROG_CMCS_Part1.Models;
 using PROG_CMCS_Part1.Services;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace PROG_CMCS_Part1.Controllers
 {
+    [Authorize(Roles = "Coordinator")]
     public class CoordinatorController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -21,9 +26,12 @@ namespace PROG_CMCS_Part1.Controllers
             _encryptionService = encryptionService;
         }
 
+        // Show all claims to the coordinator
         public async Task<IActionResult> Dashboard()
         {
-            var claims = await _context.Claims.ToListAsync();
+            var claims = await _context.Claims
+                .OrderByDescending(c => c.DateSubmitted)
+                .ToListAsync();
 
             foreach (var c in claims)
                 c.LoadDocumentLists();
@@ -31,24 +39,58 @@ namespace PROG_CMCS_Part1.Controllers
             return View(claims);
         }
 
-
+        // POST: /Coordinator/UpdateStatus
+        // status should be ClaimStatus.Verified or ClaimStatus.Rejected
         [HttpPost]
-        public async Task<IActionResult> UpdateStatus(int id, string status, string coordinatorName)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateStatus(int id, string status, string? comment)
         {
-            var claim = await _context.Claims.FindAsync(id);
+            if (string.IsNullOrWhiteSpace(status))
+                return BadRequest("Status is required.");
 
+            // Validate allowed statuses for coordinator
+            if (status != ClaimStatus.Verified && status != ClaimStatus.Rejected)
+                return BadRequest("Invalid status for coordinator action.");
+
+            var claim = await _context.Claims.FindAsync(id);
             if (claim == null)
                 return NotFound();
 
+            // Coordinator only processes claims in Pending state
+            if (claim.Status != ClaimStatus.Pending)
+                return BadRequest("This claim has already been processed.");
+
+            // Get the currently logged in user from the db
+            var currentUserName = User?.Identity?.Name;
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == currentUserName);
+
+            if (user == null)
+                return Unauthorized();
+
+            // Apply coordinator action
             claim.Status = status;
-            claim.CoordinatorName = coordinatorName;
+            claim.CoordinatorId = user.Id;
+            claim.CoordinatorName = $"{user.FirstName} {user.LastName}";
+            claim.DateVerified = System.DateTime.UtcNow;
+
+            if (status == ClaimStatus.Rejected)
+            {
+                if (string.IsNullOrWhiteSpace(comment))
+                    return BadRequest("A comment is required when rejecting a claim.");
+
+                claim.CoordinatorComment = comment.Trim();
+            }
+            else
+            {
+                // clear any comment for verified claims
+                claim.CoordinatorComment = comment?.Trim();
+            }
 
             _context.Claims.Update(claim);
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("Dashboard");
+            return RedirectToAction(nameof(Dashboard));
         }
-
 
         public async Task<IActionResult> DownloadFile(int claimId, string file)
         {
@@ -78,7 +120,7 @@ namespace PROG_CMCS_Part1.Controllers
                 var memoryStream = await _encryptionService.DecryptFileAsync(filePath);
 
                 var index = claim.EncryptedDocuments.IndexOf(file);
-                var originalName = claim.OriginalDocuments[index];
+                var originalName = claim.OriginalDocuments.ElementAtOrDefault(index) ?? file;
 
                 return File(memoryStream, "application/octet-stream", originalName);
             }
@@ -88,7 +130,6 @@ namespace PROG_CMCS_Part1.Controllers
             }
         }
 
-     
         [HttpGet]
         public async Task<IActionResult> ClaimDetails(int id)
         {
@@ -97,7 +138,7 @@ namespace PROG_CMCS_Part1.Controllers
             if (claim == null)
                 return NotFound();
 
-            claim.LoadDocumentLists(); 
+            claim.LoadDocumentLists();
 
             return View(claim);
         }

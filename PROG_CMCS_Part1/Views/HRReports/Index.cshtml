@@ -1,0 +1,65 @@
+﻿@{
+    ViewData["Title"] = "Generate Claims Report";
+}
+
+<h2>Generate Claims Report</h2>
+<hr />
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th colspan="2" class="text-center">Report Filters</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <form asp-action="GeneratePdfReport" method="post">
+
+            <tr>
+                <td class="fw-bold" style="width: 30%;">Start Date</td>
+                <td>
+                    <input type="date" name="startDate" class="form-control" />
+                </td>
+            </tr>
+
+            <tr>
+                <td class="fw-bold">End Date</td>
+                <td>
+                    <input type="date" name="endDate" class="form-control" />
+                </td>
+            </tr>
+
+            <tr>
+                <td class="fw-bold">Claim Status</td>
+                <td>
+                    <select name="status" class="form-select">
+                        <option value="">-- All Statuses --</option>
+                        <option value="Submitted">Submitted</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                </td>
+            </tr>
+
+            <tr>
+                <td colspan="2" class="text-end">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-file-earmark-pdf-fill me-1"></i>
+                        Generate PDF Report
+                    </button>
+                </td>
+            </tr>
+
+            </form>
+        </tbody>
+    </table>
+
+    <div class="mb-4">
+        <a asp-controller="HR" asp-action="Index" class="btn btn-secondary">
+            Back to HR Index
+        </a>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">

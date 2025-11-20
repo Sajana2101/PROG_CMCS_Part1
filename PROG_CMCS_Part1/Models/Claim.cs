@@ -7,17 +7,22 @@ using System.Text.Json;
 
 namespace PROG_CMCS_Part1.Models
 {
+    public static class ClaimStatus
+    {
+        public const string Pending = "Pending";
+        public const string Verified = "Verified";
+        public const string Rejected = "Rejected";
+        public const string Approved = "Approved";
+    }
+
     public class Claim
     {
-        // Unique identifier for each claim
         [Key]
-
         public int Id { get; set; }
-        // Name of the lecturer submitting the claim
+
+        // Lecturer info
         public string? LecturerName { get; set; }
-        // Module code related to the claim
         public string? ModuleCode { get; set; }
-        // Total hours worked for this claim
 
         [BindNever]
         public string? UserId { get; set; }
@@ -27,28 +32,39 @@ namespace PROG_CMCS_Part1.Models
         public ApplicationUser? User { get; set; }
 
         public int HoursWorked { get; set; }
-        // Hourly rate applied to the claim
         public decimal HourlyRate { get; set; }
-        // Automatically calculated total payment for the claim
+
+        // Computed (not stored) total
+        [NotMapped]
         public decimal TotalAmount => HoursWorked * HourlyRate;
-        // Optional comments added by the lecturer
+
         public string? Comments { get; set; }
-        // Current status of the claim (Pending, Approved, Rejected)
-        public string? Status { get; set; }
-        // Name of the coordinator handling the claim; default to "-" if none assigned
+
+        // Workflow status
+        public string? Status { get; set; } = ClaimStatus.Pending;
+
+        // Coordinator fields (new)
+        public string? CoordinatorId { get; set; }
         public string CoordinatorName { get; set; } = "-";
-        // Name of the manager approving or rejecting the claim; default to "-"
+        public string? CoordinatorComment { get; set; }
+        public DateTime? DateVerified { get; set; }
+
+        // Manager fields (optional additions)
+        public string? ManagerId { get; set; }
         public string ManagerName { get; set; } = "-";
-        // Month that the claim corresponds to (e.g., "October")
+        public string? ManagerComment { get; set; }
+        public DateTime? DateApproved { get; set; }
+
         public string? Month { get; set; }
-        // Date and time when the claim was submitted
         public DateTime DateSubmitted { get; set; }
-        // List of encrypted file names uploaded with the claim
+
+        // Document storage (kept as before)
         [NotMapped]
         public List<string> EncryptedDocuments { get; set; } = new List<string>();
-        // List of original file names corresponding to the encrypted documents
+
         [NotMapped]
         public List<string> OriginalDocuments { get; set; } = new List<string>();
+
         public string EncryptedDocumentsJson { get; set; } = "[]";
         public string OriginalDocumentsJson { get; set; } = "[]";
 
@@ -63,12 +79,13 @@ namespace PROG_CMCS_Part1.Models
             EncryptedDocumentsJson = JsonSerializer.Serialize(EncryptedDocuments);
             OriginalDocumentsJson = JsonSerializer.Serialize(OriginalDocuments);
         }
+
         public void PopulateFromUser(ApplicationUser user)
         {
             if (user == null) return;
 
             UserId = user.Id;
-            LecturerName = $"{user.FirstName} {user.LastName}"; 
+            LecturerName = $"{user.FirstName} {user.LastName}";
             HourlyRate = user.HourlyRate;
         }
     }

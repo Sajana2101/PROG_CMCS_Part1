@@ -1,71 +1,55 @@
 ﻿@model IEnumerable<PROG_CMCS_Part1.Models.HRManagement>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "HR Users";
 }
 
-<h1>Index</h1>
+<h2>HR Users</h2>
+<hr />
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
+<div class="d-flex justify-content-between mb-3">
+    <a asp-action="Create" class="btn btn-primary">Create New</a>
+
+    <a asp-controller="HRReports"
+       asp-action="Index"
+       class="btn btn-success">
+        <i class="bi bi-file-earmark-text-fill me-1"></i>
+        Generate Claims Report
+    </a>
+</div>
+
+<table class="table table-striped table-bordered mt-3">
+    <thead class="table-dark">
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.FirstName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.LastName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Email)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.HourlyRate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.MaxHours)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Password)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Role)
-            </th>
-            <th></th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Email</th>
+            <th>Hourly Rate</th>
+            <th>Max Hours</th>
+            <th>Password</th>
+            <th>Role</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.FirstName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.LastName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Email)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.HourlyRate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.MaxHours)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Password)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Role)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.FirstName</td>
+                <td>@item.LastName</td>
+                <td>@item.Email</td>
+                <td>R @item.HourlyRate</td>
+                <td>@item.MaxHours</td>
+                <td>@item.Password</td>
+                <td>@item.Role</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary">Edit</a>
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info ms-1">Details</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger ms-1">Delete</a>
+                </td>
+            </tr>
+        }
     </tbody>
 </table>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
