@@ -13,13 +13,18 @@ using System.Threading.Tasks;
 
 namespace PROG_CMCS_Part1.Controllers
 {
-    [Authorize(Roles = "Lecturer")]
+    // Only lecturers can access this controller
+    [Authorize(Roles = "Lecturer")] 
     public class LecturerController : Controller
     {
+        // Database context
         private readonly ApplicationDbContext _context;
+        // Handles file encryption/decryption
         private readonly FileEncryptionService _encryptionService;
-        private readonly UserManager<ApplicationUser> _userManager;
+        // User management
+        private readonly UserManager<ApplicationUser> _userManager; 
 
+        // Allowed file types and max file size for uploads
         private readonly long _maxFileSize = 5 * 1024 * 1024;
         private readonly string[] _allowedExtensions = { ".pdf", ".docx", ".doc", ".xlsx", ".xls", ".jpg", ".jpeg", ".png", ".txt" };
 
@@ -30,20 +35,25 @@ namespace PROG_CMCS_Part1.Controllers
             _encryptionService = encryptionService;
         }
 
+       
+        // Displays the lecturer's submitted claims with optional status filter
         [HttpGet]
         public async Task<IActionResult> Dashboard(string statusFilter)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Challenge();
 
+            // Get claims submitted by the logged-in lecturer
             var claims = await _context.Claims
                                        .Where(c => c.UserId == user.Id)
                                        .Include(c => c.User)
                                        .ToListAsync();
 
             foreach (var c in claims)
-                c.LoadDocumentLists();
+                // Load file lists from JSON
+                c.LoadDocumentLists(); 
 
+            // Apply status filter if specified
             if (!string.IsNullOrEmpty(statusFilter) && statusFilter != "All")
                 claims = claims.Where(c => c.Status == statusFilter).ToList();
 
@@ -55,6 +65,8 @@ namespace PROG_CMCS_Part1.Controllers
             return View(claims);
         }
 
+       
+        // Displays form for submitting a new claim
         [HttpGet]
         public async Task<IActionResult> SubmitClaim()
         {
@@ -66,34 +78,32 @@ namespace PROG_CMCS_Part1.Controllers
                 UserId = user.Id,
                 LecturerName = $"{user.FirstName} {user.LastName}",
                 HourlyRate = user.HourlyRate,
-                Month = DateTime.UtcNow.ToString("MMMM yyyy")
+                // Default to current month
+                Month = DateTime.UtcNow.ToString("MMMM yyyy") 
             };
 
             return View(model);
         }
+
+        
+        // Handles claim submission with file uploads
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SubmitClaim(Claim newClaim, List<IFormFile>? uploadedFiles)
         {
-            if (!User.Identity.IsAuthenticated)
-                return Challenge();
-
+            if (!User.Identity.IsAuthenticated) return Challenge();
             var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-                return Challenge();
+            if (user == null) return Challenge();
 
-            
             uploadedFiles ??= new List<IFormFile>();
 
-          
-            newClaim.PopulateFromUser(user);         
+            newClaim.PopulateFromUser(user);
             newClaim.DateSubmitted = DateTime.UtcNow;
             newClaim.Status = "Pending";
 
-         
+            // Validate model state
             if (!ModelState.IsValid)
             {
-              
                 var errors = ModelState
                     .Where(kvp => kvp.Value.Errors.Count > 0)
                     .SelectMany(kvp => kvp.Value.Errors.Select(e => (Key: kvp.Key, Error: e.ErrorMessage)))
@@ -105,7 +115,7 @@ namespace PROG_CMCS_Part1.Controllers
                 return View(newClaim);
             }
 
-          
+            // Check monthly hours limit
             var month = newClaim.Month ?? DateTime.UtcNow.ToString("MMMM yyyy");
             var monthlyHours = await _context.Claims
                 .Where(c => c.UserId == user.Id && c.Month == month)
@@ -119,7 +129,6 @@ namespace PROG_CMCS_Part1.Controllers
                 return View(newClaim);
             }
 
-           
             try
             {
                 _context.Claims.Add(newClaim);
@@ -132,7 +141,7 @@ namespace PROG_CMCS_Part1.Controllers
                 return View(newClaim);
             }
 
-           
+            // Handle file uploads
             var claimFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"claim-{newClaim.Id}");
             Directory.CreateDirectory(claimFolder);
 
@@ -140,14 +149,12 @@ namespace PROG_CMCS_Part1.Controllers
             {
                 try
                 {
-                    if (file == null || file.Length == 0)
-                        continue;
+                    if (file == null || file.Length == 0) continue;
 
                     var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
 
                     if (!_allowedExtensions.Contains(ext))
                     {
-                        
                         ModelState.AddModelError("", $"File type {ext} not allowed for {file.FileName}.");
                         continue;
                     }
@@ -161,22 +168,18 @@ namespace PROG_CMCS_Part1.Controllers
                     var encryptedName = $"{Path.GetFileNameWithoutExtension(Path.GetRandomFileName())}{ext}.enc";
                     var filePath = Path.Combine(claimFolder, encryptedName);
 
-                  
                     using var stream = file.OpenReadStream();
                     await _encryptionService.EncryptFileAsync(stream, filePath);
 
-                    
                     newClaim.EncryptedDocuments.Add(encryptedName);
                     newClaim.OriginalDocuments.Add(file.FileName);
                 }
                 catch (Exception ex)
                 {
-                   
                     ModelState.AddModelError("", $"Failed to process {file?.FileName}: {ex.Message}");
                 }
             }
 
-           
             newClaim.SaveDocumentLists();
 
             try
@@ -191,7 +194,6 @@ namespace PROG_CMCS_Part1.Controllers
                 return View(newClaim);
             }
 
-           
             if (ModelState.ErrorCount > 0)
             {
                 TempData["FormErrors"] = string.Join(" • ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
@@ -202,8 +204,8 @@ namespace PROG_CMCS_Part1.Controllers
             return RedirectToAction("Dashboard");
         }
 
-
-
+        
+        // Allows lecturer to download their own uploaded files
         [HttpGet]
         public async Task<IActionResult> DownloadFile(int claimId, string file)
         {
@@ -212,6 +214,7 @@ namespace PROG_CMCS_Part1.Controllers
 
             var claim = await _context.Claims.FindAsync(claimId);
             if (claim == null) return NotFound();
+            // Ensure lecturer owns the claim
             if (claim.UserId != user.Id) return Forbid();
 
             claim.LoadDocumentLists();
@@ -234,6 +237,8 @@ namespace PROG_CMCS_Part1.Controllers
             }
         }
 
+        
+        // Displays detailed information about a single claim for the logged-in lecturer
         [HttpGet]
         public async Task<IActionResult> ClaimDetails(int id)
         {

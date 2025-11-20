@@ -10,16 +10,20 @@ using System.Threading.Tasks;
 
 namespace PROG_CMCS_Part1.Controllers
 {
+    // Only users with Coordinator role can access
     [Authorize(Roles = "Coordinator")]
     public class CoordinatorController : Controller
     {
+        // DB context for accessing claims and users
         private readonly ApplicationDbContext _context;
+        // Handles encryption/decryption of files
         private readonly FileEncryptionService _encryptionService;
-
+        // Max upload size (5 MB) and allowed file extensions
         private readonly long _maxFileSize = 5 * 1024 * 1024;
         private readonly string[] _allowedExtensions =
             { ".pdf", ".docx", ".doc", ".xlsx", ".xls", ".jpg", ".jpeg", ".png", ".txt" };
 
+        // Constructor injects services
         public CoordinatorController(ApplicationDbContext context, FileEncryptionService encryptionService)
         {
             _context = context;
@@ -91,7 +95,7 @@ namespace PROG_CMCS_Part1.Controllers
 
             return RedirectToAction(nameof(Dashboard));
         }
-
+        // Allows coordinator to download an encrypted claim document
         public async Task<IActionResult> DownloadFile(int claimId, string file)
         {
             var claim = await _context.Claims.FindAsync(claimId);
@@ -129,7 +133,7 @@ namespace PROG_CMCS_Part1.Controllers
                 return BadRequest("Error decrypting the file.");
             }
         }
-
+        // Displays details of a specific claim
         [HttpGet]
         public async Task<IActionResult> ClaimDetails(int id)
         {

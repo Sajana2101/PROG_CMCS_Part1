@@ -4,7 +4,7 @@
 }
 
 <h2>Submit Claim</h2>
-
+<!-- Submit claim -->
 <form asp-action="SubmitClaim" asp-controller="Lecturer" method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()
 
@@ -46,7 +46,7 @@
         <input asp-for="HoursWorked" class="form-control" />
         <span asp-validation-for="HoursWorked" class="text-danger"></span>
     </div>
-
+    <!-- Fixed hourly rate -->
     <div class="mb-3 col-md-4">
         <label asp-for="HourlyRate">Hourly Rate:</label>
         <input type="text" class="form-control" value="@Model.HourlyRate" readonly />

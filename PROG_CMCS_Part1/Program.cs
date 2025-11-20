@@ -6,33 +6,36 @@ using PROG_CMCS_Part1.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
-
+// Add session support
 builder.Services.AddSession(options =>
 {
+    // Session timeout
     options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
-
+// Add custom file encryption service
 builder.Services.AddScoped<FileEncryptionService>();
-
+// Configure EF Core with SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+// Configure Identity with custom ApplicationUser
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
 var app = builder.Build();
-
+// Ensure database is created and roles exist
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
 
     var db = services.GetRequiredService<ApplicationDbContext>();
+    // Create DB if not exists
     db.Database.EnsureCreated();
-
+    // Create default roles
     await EnsureRoles(services);
+    // Seed default HR user
     await CreateHRRole(services);
 }
 
@@ -46,10 +49,10 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-
+// Enable Identity auth
 app.UseAuthentication();
 app.UseAuthorization();
-
+// Enable session
 app.UseSession();
 
 app.MapControllerRoute(
@@ -57,7 +60,7 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
-
+// Create default roles
 async Task EnsureRoles(IServiceProvider services)
 {
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
@@ -71,7 +74,7 @@ async Task EnsureRoles(IServiceProvider services)
         }
     }
 }
-
+// Seed default HR user
 async Task CreateHRRole(IServiceProvider services)
 {
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
@@ -91,8 +94,9 @@ async Task CreateHRRole(IServiceProvider services)
             FirstName = "HR",
             LastName = "Admin"
         };
-
+        // Set password
         await userManager.CreateAsync(hrUser, "@Admin1234");
+        // Assign HR role
         await userManager.AddToRoleAsync(hrUser, "HR");
     }
 }

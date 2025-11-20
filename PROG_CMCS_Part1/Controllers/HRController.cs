@@ -6,6 +6,7 @@ using PROG_CMCS_Part1.Models;
 
 namespace PROG_CMCS_Part1.Controllers
 {
+    // Only users with HR role can access
     [Authorize(Roles = "HR")]
     public class HRController : Controller
     {
@@ -14,10 +15,12 @@ namespace PROG_CMCS_Part1.Controllers
 
         public HRController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
         {
+            // Manages users
             _userManager = userManager;
+            // Manages roles
             _roleManager = roleManager;
         }
-
+        // List all users in the system
         public async Task<IActionResult> Index()
         {
             var users = _userManager.Users.ToList();
@@ -40,13 +43,13 @@ namespace PROG_CMCS_Part1.Controllers
 
             return View(model);
         }
-
+        // Display form for creating a new user
         public IActionResult Create()
         {
             ViewBag.Roles = new SelectList(new[] { "HR", "Lecturer", "Coordinator", "Manager" });
             return View(new HRManagement());
         }
-
+        // Handles new user creation
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(HRManagement model)
@@ -84,7 +87,7 @@ namespace PROG_CMCS_Part1.Controllers
 
                 return View(model);
             }
-
+            // Assign role if specified
             if (!string.IsNullOrEmpty(model.Role))
             {
                 if (!await _roleManager.RoleExistsAsync(model.Role))
@@ -96,7 +99,7 @@ namespace PROG_CMCS_Part1.Controllers
             TempData["Success"] = $"User {user.Email} created.";
             return RedirectToAction("Index");
         }
-
+        // Display form for editing user
         public async Task<IActionResult> Edit(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
@@ -117,7 +120,7 @@ namespace PROG_CMCS_Part1.Controllers
             });
         }
 
-
+        // Handles updates to user information and role assignment
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(HRManagement model)
@@ -152,7 +155,7 @@ namespace PROG_CMCS_Part1.Controllers
                     ModelState.AddModelError("", error.Description);
                 return View(model);
             }
-
+            // Update roles if changed
             if (!string.IsNullOrEmpty(model.Role))
             {
                 var currentRoles = await _userManager.GetRolesAsync(user);
@@ -163,7 +166,7 @@ namespace PROG_CMCS_Part1.Controllers
 
                 await _userManager.AddToRoleAsync(user, model.Role);
             }
-
+            // Update password if provided
             if (!string.IsNullOrEmpty(model.Password))
             {
                 var token = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -176,7 +179,7 @@ namespace PROG_CMCS_Part1.Controllers
         }
 
 
-
+        // Display detailed info about a user
         public async Task<IActionResult> Details(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
@@ -199,7 +202,7 @@ namespace PROG_CMCS_Part1.Controllers
             return View(model);
         }
 
-
+        // Display confirmation page for deleting a user
         public async Task<IActionResult> Delete(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
@@ -221,7 +224,7 @@ namespace PROG_CMCS_Part1.Controllers
 
             return View(model);
         }
-
+        // Deletes the user after confirmation
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(string id)
         {
@@ -234,7 +237,7 @@ namespace PROG_CMCS_Part1.Controllers
             if (result.Succeeded)
                 return RedirectToAction("Index");
 
-          
+            // If deletion failed, display errors
             var roles = await _userManager.GetRolesAsync(user);
             var model = new HRManagement
             {
