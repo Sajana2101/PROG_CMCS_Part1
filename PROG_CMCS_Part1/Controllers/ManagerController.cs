@@ -36,7 +36,7 @@ namespace PROG_CMCS_Part1.Controllers
         {
             // Only show claims that are Verified, Approved, or Rejected
             var claims = await _context.Claims
-                .Where(c => c.Status == ClaimStatus.Verified || c.Status == ClaimStatus.Approved || c.Status == ClaimStatus.Rejected)
+                .Where(c => c.Status == ClaimStatus.Verified || c.Status == ClaimStatus.Approved)
                 .OrderByDescending(c => c.DateSubmitted)
                 .ToListAsync();
 
