@@ -28,6 +28,13 @@ namespace PROG_CMCS_Part1.Data
             builder.Entity<Claim>()
                .Property(u => u.HourlyRate)
                .HasPrecision(18, 2);
+            // enable cascade delete 
+            builder.Entity<ApplicationUser>()
+                .HasMany<IdentityUserClaim<string>>()      // Identity claims table
+                .WithOne()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
         }
         // DbSet representing the Claims table
         public DbSet<Claim> Claims { get; set; }
