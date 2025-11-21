@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PdfSharpCore.Drawing;
 using PdfSharpCore.Pdf;
 using PROG_CMCS_Part1.Data;
@@ -10,6 +11,13 @@ using System.Linq;
 [Authorize(Roles = "HR")]
 public class HRReportsController : Controller
 {
+    private readonly ApplicationDbContext _context;
+
+    public HRReportsController(ApplicationDbContext context)
+    {
+        _context = context;
+    }
+
     public IActionResult Index()
     {
         return View();
@@ -18,20 +26,21 @@ public class HRReportsController : Controller
     [HttpPost]
     public IActionResult GeneratePdfReport(DateTime? startDate, DateTime? endDate, string status)
     {
-        // Get all claims from JSON-based repository
-        var claimsQuery = ClaimData.GetAllClaims().AsQueryable();
+        // Start with DB query
+        var claimsQuery = _context.Claims.AsQueryable();
 
-        // Filter by dates
+        // Filter by submitted date
         if (startDate.HasValue)
             claimsQuery = claimsQuery.Where(c => c.DateSubmitted >= startDate.Value);
 
         if (endDate.HasValue)
             claimsQuery = claimsQuery.Where(c => c.DateSubmitted <= endDate.Value);
 
-        // Filter by claim status (Submitted, Approved, Rejected)
+        // Filter by status
         if (!string.IsNullOrWhiteSpace(status))
-            claimsQuery = claimsQuery.Where(c => c.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
+            claimsQuery = claimsQuery.Where(c => c.Status == status);
 
+        // Execute query
         var claimsList = claimsQuery.ToList();
 
         using var stream = new MemoryStream();
@@ -70,12 +79,13 @@ public class HRReportsController : Controller
 
         foreach (var claim in claimsList)
         {
-            // Convert month for display
             string monthFormatted = claim.Month;
+
+            // If month is "March 2024", format it same way as old JSON logic
             var parts = claim.Month?.Split(' ');
             if (parts?.Length == 2 && int.TryParse(parts[1], out int year))
             {
-                monthFormatted = $"{parts[0]} {year % 10000}";
+                monthFormatted = $"{parts[0]} {year}";
             }
 
             // Calculate total amount
@@ -91,7 +101,7 @@ public class HRReportsController : Controller
 
             yPoint += rowHeight;
 
-            // New page when needed
+            // New page if needed
             if (yPoint > page.Height - 50)
             {
                 page = pdf.AddPage();
