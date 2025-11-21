@@ -124,7 +124,7 @@ namespace PROG_CMCS_Part1.Controllers
             _context.Claims.Update(claim);
             await _context.SaveChangesAsync();
 
-            TempData["Success"] = $"Claim {id} has been {newStatus.ToLower()} by {claim.ManagerName}.";
+            
             return RedirectToAction("Dashboard");
         }
     }
